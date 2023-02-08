@@ -1,0 +1,26 @@
+
+{
+  "id": "vehicle-tokens",
+  "name": "vehicle-tokens",
+  "title": "Vehicle Tokens",
+  "description": "Drop cards onto the canvas as tokens",
+  "authors": [{"name":"Xaukael"}],
+  "version": "1.0.0",
+  "compatibility": {
+      "minimum": "10",
+      "verified": "10"
+    },
+  "scripts": ["vehicle-tokens.js"],
+  "relationships": {
+      "requires": [
+					{
+              "id": "token-attacher",
+              "type": "module",
+              "manifest": "https://raw.githubusercontent.com/KayelGee/token-attacher/v4.5.11/module.json"
+          }
+      ]
+  },
+  "url": "https://github.com/xaukael/vehicle-tokens/",
+  "manifest": "https://github.com/xaukael/dvehicle-tokens/raw/main/module.json",
+  "download": "https://github.com/xaukael/vehicle-tokens/raw/main/vehicle-tokens.zip"
+}
