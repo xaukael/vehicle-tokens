@@ -1,6 +1,6 @@
 Hooks.on('renderTokenConfig', (app, html, data)=>{
   if (!game.user.isGM) return;
-  html.find('div.tab[data-tab="appearance"]').append($(`
+  html.find('div.tab[data-tab="character"]').append($(`
         <div class="form-group">
           <label>Vehicle Token</label>
           <input type="checkbox" name="flags.vehicle-tokens.vehicle">
