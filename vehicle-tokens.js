@@ -1,11 +1,19 @@
 Hooks.on('renderTokenConfig', (app, html, data)=>{
   if (!game.user.isGM) return;
+  if (app.object.flags["token-attacher"]?.parent) {
+    ui.notifications.warn('Detatch token before editing token config.');
+    html.css({display:'none'})
+    html.ready(function(){app.close()})
+    return false;
+  }
   html.find('div.tab[data-tab="character"]').append($(`
         <div class="form-group">
           <label>Vehicle Token</label>
           <input type="checkbox" name="flags.vehicle-tokens.vehicle">
         </div>
   `))
+  
+  html.find('input[name="scale"]').prop( "max", 10.0)
   html.find('input[name="flags.vehicle-tokens.vehicle"]').prop( "checked", app.token.flags['vehicle-tokens']?.vehicle)
   //.change(function(){ app.object.setFlag('vehicle-tokens', 'vehicle', $(this).is(':checked'))  });
 });
@@ -14,12 +22,7 @@ Hooks.on('renderTokenHUD', (app, html, hudData)=>{
   if (!app.object.document.flags['vehicle-tokens']?.vehicle) return;
   let $toggleRide = $(`<div class="control-icon toggle-ride ${app.object.document.flags['vehicle-tokens']?.active?'active':''} " title="Actor Sheet">
   ${app.object.document.flags['vehicle-tokens']?.active?'<i class="fas fa-unlink"></i>':'<i class="fas fa-link"></i>'}</div>`)
-  .click(async function(){
-    let active = await app.object.toggleRide();
-    console.log(active);
-    if (active) $(this).addClass('active').html('<i class="fas fa-unlink"></i>');//app.object.document.flags['vehicle-tokens']?.
-    else $(this).removeClass('active').html('<i class="fas fa-link"></i>');
-  });
+  .click(async function(){ await app.object.toggleRide(); });
   html.find('.col.left').append($toggleRide);
 });
 Hooks.on('updateCombat', (combat, update, options, user)=>{
@@ -39,7 +42,8 @@ Token.prototype.toggleRide = async function() {
     ui.notifications.notify(token.document.flags['token-attacher']?.attached?.Token.map(t=>canvas.scene.tokens.get(t).name).join(', ') + ' dettached from ' + token.document.name)
     
     await tokenAttacher.detachElementsFromToken(token.document.flags['token-attacher']?.attached?.Token.map(t=>canvas.scene.tokens.get(t).object), token, true);
-    await token.document.setFlag('vehicle-tokens', 'active', false);
+    await token.document.update({'flags.vehicle-tokens.active': false, "flags.token-attacher.animate": true});
+    $('#token-hud > div.col.left > div.control-icon.toggle-ride').removeClass('active').html('<i class="fas fa-link"></i>');
     return false;
   }
   function inside(point, vs) {
@@ -90,14 +94,17 @@ Token.prototype.toggleRide = async function() {
       if(imageData.data[3] !== 0) elements.push(t);
     }
     if (!elements.length) {
+      $('#token-hud > div.col.left > div.control-icon.toggle-ride').removeClass('active').html('<i class="fas fa-link"></i>');
       await token.document.setFlag('vehicle-tokens', 'active', false);
       ui.notifications.notify('No tokens to attach to ' + token.document.name);
       return false;
     }
     await tokenAttacher.attachElementsToToken(elements, token);
     ui.notifications.notify(elements.map(t=>t.document.name).join(', ') + ' attached to ' + token.document.name)
-    
-    await token.document.setFlag('vehicle-tokens', 'active', !!elements.length);
+    let noAnimateUpdate = token.document.flags['token-attacher'].attached.Token.map(t=>{return {_id:t, "flags.token-attacher.animate": false}})
+    canvas.scene.updateEmbeddedDocuments("Token", noAnimateUpdate)
+    await token.document.update({'flags.vehicle-tokens.active': true, "flags.token-attacher.animate": false});
+    $('#token-hud > div.col.left > div.control-icon.toggle-ride').addClass('active').html('<i class="fas fa-unlink"></i>');
     return true;
   }
   return true;
