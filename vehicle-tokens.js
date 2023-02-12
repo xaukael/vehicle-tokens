@@ -25,6 +25,10 @@ Hooks.on('renderTokenHUD', (app, html, hudData)=>{
   .click(async function(){ await app.object.toggleRide(); });
   html.find('.col.left').append($toggleRide);
 });
+Hooks.on('preUpdateToken', (token, update, context)=>{
+  if (!token.flags['token-attacher']) return true;
+  context.animation = {duration:game.settings.get('vehicle-tokens', 'duration')}
+})
 Hooks.on('updateCombat', (combat, update, options, user)=>{
   if (!game.user.isGM) return;
   if (!game.settings.get('vehicle-tokens', 'autoOnTurn')) return;
@@ -101,9 +105,9 @@ Token.prototype.toggleRide = async function() {
     }
     await tokenAttacher.attachElementsToToken(elements, token);
     ui.notifications.notify(elements.map(t=>t.document.name).join(', ') + ' attached to ' + token.document.name)
-    let noAnimateUpdate = token.document.flags['token-attacher'].attached.Token.map(t=>{return {_id:t, "flags.token-attacher.animate": false}})
+    let noAnimateUpdate = token.document.flags['token-attacher'].attached.Token.map(t=>{return {_id:t, "flags.token-attacher.animate": game.settings.get('vehicle-tokens', 'animate')}})
     canvas.scene.updateEmbeddedDocuments("Token", noAnimateUpdate)
-    await token.document.update({'flags.vehicle-tokens.active': true, "flags.token-attacher.animate": false});
+    await token.document.update({'flags.vehicle-tokens.active': true, "flags.token-attacher.animate": game.settings.get('vehicle-tokens', 'animate')});
     $('#token-hud > div.col.left > div.control-icon.toggle-ride').addClass('active').html('<i class="fas fa-unlink"></i>');
     return true;
   }
@@ -126,6 +130,24 @@ Hooks.once("setup", async () => {
     config: true,
     type: Boolean,
     default: true,
+    onChange: value => { }
+  });
+  game.settings.register('vehicle-tokens', 'animate', {
+    name: `Animate`,
+    hint: `Determines whether to animate the vehicle and tokens attached to it. Rotation animations look strange for tokens near the edge of large vehicles. Changes will not be reflected until tokens are attached again.`,
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: true,
+    onChange: value => { }
+  });
+  game.settings.register('vehicle-tokens', 'duration', {
+    name: `Animation Duration`,
+    hint: `To keep animations synced to avoid weirdness, all animations need to have the same duration. In milliseconds.`,
+    scope: "world",
+    config: true,
+    type: Number,
+    default: 250,
     onChange: value => { }
   });
 });
