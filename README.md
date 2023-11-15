@@ -16,6 +16,9 @@ This control will be active (highlighted) if there are tokens attached. Attached
 
 # Updates
 
+1.3.1
+  - v11 versoion bump
+  
 1.3.0
 
   - added settings to toggle animation and animation duration
