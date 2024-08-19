@@ -16,9 +16,11 @@ Hooks.on('renderTokenConfig', (app, html, data)=>{
   html.find('input[name="scale"]').prop( "max", 10.0)
   html.find('input[name="flags.vehicle-tokens.vehicle"]').prop( "checked", app.token.flags['vehicle-tokens']?.vehicle)
   //.change(function(){ app.object.setFlag('vehicle-tokens', 'vehicle', $(this).is(':checked'))  });
+  app.setPosition()
 });
 Hooks.on('renderTokenHUD', (app, html, hudData)=>{
-  if (!game.user.isGM) return;
+  //if (!game.user.isGM) return;
+  if (this.permission<3) return;
   if (!app.object.document.flags['vehicle-tokens']?.vehicle) return;
   let $toggleRide = $(`<div class="control-icon toggle-ride ${app.object.document.flags['vehicle-tokens']?.active?'active':''} " title="Actor Sheet">
   ${app.object.document.flags['vehicle-tokens']?.active?'<i class="fas fa-unlink"></i>':'<i class="fas fa-link"></i>'}</div>`)
@@ -33,13 +35,13 @@ Hooks.on('updateCombat', (combat, update, options, user)=>{
   if (!game.user.isGM) return;
   if (!game.settings.get('vehicle-tokens', 'autoOnTurn')) return;
   let previous = combat.scene.tokens.get(combat.previous.tokenId)
-  if (previous.flags['vehicle-tokens']?.vehicle && previous.flags['vehicle-tokens']?.active) previous.object.toggleRide();
+  if (previous?.flags['vehicle-tokens']?.vehicle && previous.flags['vehicle-tokens']?.active) previous.object.toggleRide();
   if (!combat.combatant.token.flags['vehicle-tokens']?.vehicle) return;
   if (combat.combatant.token.flags['vehicle-tokens']?.active) return;
   combat.combatant.token.object.toggleRide();
 });
 Token.prototype.toggleRide = async function() {
-  if (!game.user.isGM) return;
+  if (this.permission<3) return;
   var token = this;
   
   if (token.document.flags['token-attacher']?.attached?.Token?.length) {
@@ -105,7 +107,7 @@ Token.prototype.toggleRide = async function() {
     }
     await tokenAttacher.attachElementsToToken(elements, token);
     ui.notifications.notify(elements.map(t=>t.document.name).join(', ') + ' attached to ' + token.document.name)
-    let noAnimateUpdate = token.document.flags['token-attacher'].attached.Token.map(t=>{return {_id:t, "flags.token-attacher.animate": game.settings.get('vehicle-tokens', 'animate')}})
+    let noAnimateUpdate = token.document.getFlag('token-attacher', 'attached.Token')?.map(t=>{return {_id:t, "flags.token-attacher.animate": game.settings.get('vehicle-tokens', 'animate')}})
     canvas.scene.updateEmbeddedDocuments("Token", noAnimateUpdate)
     await token.document.update({'flags.vehicle-tokens.active': true, "flags.token-attacher.animate": game.settings.get('vehicle-tokens', 'animate')});
     $('#token-hud > div.col.left > div.control-icon.toggle-ride').addClass('active').html('<i class="fas fa-unlink"></i>');
